@@ -1,19 +1,29 @@
 package com.harshitksinghai.UserEntry.Services.Impl;
 
+import com.harshitksinghai.UserEntry.Config.JwtUtility.JwtUtils;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.*;
+import com.harshitksinghai.UserEntry.DTO.ResponseDTO.JwtResponseDTO;
+import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
 import com.harshitksinghai.UserEntry.Models.User;
 import com.harshitksinghai.UserEntry.Services.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
 public class UserLoginServiceImpl implements UserLoginService {
-
+    private final Logger LOG = LoggerFactory.getLogger(UserLoginServiceImpl.class);
     @Autowired
     UserService userService;
 
@@ -26,19 +36,47 @@ public class UserLoginServiceImpl implements UserLoginService {
     @Autowired
     OTPService otpService;
 
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Value("${site.url}")
     private String siteURL;
 
     @Override
-    public ResponseEntity<String> verifyPassword(UserLoginRequestDTO userLoginRequestDTO) {
-        Optional<User> userOpt = userService.findByEmail(userLoginRequestDTO.getEmail());
-        if(userOpt.isPresent()){
-            if(userOpt.get().getPassword().equals(userLoginRequestDTO.getPassword())){
-                return new ResponseEntity<>("Password matched, login successful, go to main", HttpStatus.OK);
-            }
-            return new ResponseEntity<>("Password incorrect, login unsuccessful, retry password", HttpStatus.BAD_REQUEST);
+    public ResponseEntity<UserLoginResponseDTO> verifyPassword(UserLoginRequestDTO userLoginRequestDTO) {
+        UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
+
+        if (userLoginRequestDTO == null) {
+            userLoginResponseDTO.setMessage("There must be enough data to proceed further.");
+            userLoginResponseDTO.setSuccess(false);
+            return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>("email not found", HttpStatus.BAD_REQUEST);
+
+        Optional<User> userOpt = userService.findByEmail(userLoginRequestDTO.getEmail());
+        LOG.info(" user fetched from DB " + userOpt.toString());
+
+        if (userOpt.isEmpty()) {
+            userLoginResponseDTO.setMessage("email not found");
+            userLoginResponseDTO.setSuccess(false);
+        }
+        //User user = userOpt.get();
+        String jwtToken = null;
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLoginRequestDTO.getEmail(), userLoginRequestDTO.getPassword()));
+        if (authentication.isAuthenticated()) {
+            jwtToken = jwtUtils.generateToken(userLoginRequestDTO.getEmail());
+            userLoginResponseDTO.setMessage("email and password verified successfully");
+            userLoginResponseDTO.setSuccess(true);
+            userLoginResponseDTO.setJwtToken(jwtToken);
+        } else {
+            throw new UsernameNotFoundException("invalid user request..!!");
+        }
+        return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.ACCEPTED);
     }
 
     @Override

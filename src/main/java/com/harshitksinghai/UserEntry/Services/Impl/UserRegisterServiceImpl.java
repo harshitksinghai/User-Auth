@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -28,13 +29,18 @@ public class UserRegisterServiceImpl implements UserRegisterService {
     @Autowired
     LinkService linkService;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Value("${site.url}")
     private String siteURL;
 
     @Override
     public ResponseEntity<String> signUpUser(UserSignUpRequestDTO userSignUpRequestDTO) {
         String email = userSignUpRequestDTO.getEmail();
-
+        if(userService.findByEmail(email).isPresent()){
+            return new ResponseEntity<>("email already exists", HttpStatus.BAD_REQUEST);
+        }
         String otp = otpService.generateOTP();
         otpService.addOTPDetails(email, otp);
 
@@ -79,7 +85,8 @@ public class UserRegisterServiceImpl implements UserRegisterService {
             User user = userOpt.get();
             if (user.getIsVerified()) {
                 user.setUsername(userOnBoardRequestDTO.getUsername());
-                user.setPassword(userOnBoardRequestDTO.getPassword()); // password encryption not yet implemented
+                String encryptedPassword = passwordEncoder.encode(userOnBoardRequestDTO.getPassword());
+                user.setPassword(encryptedPassword); // password encryption not yet implemented
                 userService.saveUserDetails(user);
             } else {
                 userService.deleteUser(user.getEmail());

@@ -1,4 +1,4 @@
-package com.harshitksinghai.UserEntry.DTO.RequestDTO;
+package com.harshitksinghai.UserEntry.DTO.ResponseDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserLoginRequestDTO {
-    private String email;
-    private String password;
+public class JwtResponseDTO {
+    private String accessToken;
+
 }

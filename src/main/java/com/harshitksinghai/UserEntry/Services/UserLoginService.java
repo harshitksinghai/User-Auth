@@ -1,10 +1,11 @@
 package com.harshitksinghai.UserEntry.Services;
 
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.*;
+import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
 import org.springframework.http.ResponseEntity;
 
 public interface UserLoginService{
-    ResponseEntity<String> verifyPassword(UserLoginRequestDTO userLoginRequestDTO);
+    ResponseEntity<UserLoginResponseDTO> verifyPassword(UserLoginRequestDTO userLoginRequestDTO);
 
     ResponseEntity<String> forgotPassword(ForgotPasswordRequestDTO forgotPasswordRequestDTO);
 

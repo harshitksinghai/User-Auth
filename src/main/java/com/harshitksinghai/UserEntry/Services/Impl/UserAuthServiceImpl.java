@@ -1,5 +1,6 @@
 package com.harshitksinghai.UserEntry.Services.Impl;
 
+import com.harshitksinghai.UserEntry.Config.JwtUtility.JwtUtils;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.VerifyEmailRequestDTO;
 import com.harshitksinghai.UserEntry.Models.User;
 import com.harshitksinghai.UserEntry.Services.UserAuthService;
@@ -16,6 +17,9 @@ public class UserAuthServiceImpl implements UserAuthService {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    JwtUtils jwtUtils;
     @Override
     public ResponseEntity<String> verifyEmail(VerifyEmailRequestDTO verifyEmailRequestDTO) {
         Optional<User> userOpt = userService.findByEmail(verifyEmailRequestDTO.getEmail());
@@ -42,4 +46,5 @@ public class UserAuthServiceImpl implements UserAuthService {
     public ResponseEntity<String> emailFieldEditedAction() {
         return null;
     }
+
 }

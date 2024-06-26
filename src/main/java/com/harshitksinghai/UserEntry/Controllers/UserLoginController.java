@@ -1,6 +1,7 @@
 package com.harshitksinghai.UserEntry.Controllers;
 
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.*;
+import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
 import com.harshitksinghai.UserEntry.Services.UserLoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,7 @@ public class UserLoginController {
     UserLoginService userLoginService;
 
     @PostMapping("/verify-password")
-    public ResponseEntity<String> verifyPassword(@RequestBody UserLoginRequestDTO userLoginRequestDTO){
+    public ResponseEntity<UserLoginResponseDTO> verifyPassword(@RequestBody UserLoginRequestDTO userLoginRequestDTO){
         return userLoginService.verifyPassword(userLoginRequestDTO);
     }
 
