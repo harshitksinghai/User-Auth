@@ -13,6 +13,6 @@ public class UserLoginResponseDTO {
     private boolean success;
     private String message;
     private String jwtToken;
-   // private String refreshToken;
+    private String refreshToken;
 
 }

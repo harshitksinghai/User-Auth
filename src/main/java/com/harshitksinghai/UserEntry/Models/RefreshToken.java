@@ -2,29 +2,22 @@ package com.harshitksinghai.UserEntry.Models;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+
+import java.time.Instant;
 
 @Entity
 @Data
-@ToString
-@NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "users")
-public class User {
+@NoArgsConstructor
+@Builder
+public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String email;
-
-    private String username;
-
-    private String password;
-
-    private Boolean isVerified;
-
-    @OneToOne
-    private RefreshToken refreshToken;
+    private String token;
+    private Instant expiryDate;
 }

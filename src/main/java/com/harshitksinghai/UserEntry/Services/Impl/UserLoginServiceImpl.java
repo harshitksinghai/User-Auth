@@ -2,8 +2,8 @@ package com.harshitksinghai.UserEntry.Services.Impl;
 
 import com.harshitksinghai.UserEntry.Config.JwtUtility.JwtUtils;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.*;
-import com.harshitksinghai.UserEntry.DTO.ResponseDTO.JwtResponseDTO;
 import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
+import com.harshitksinghai.UserEntry.Models.RefreshToken;
 import com.harshitksinghai.UserEntry.Models.User;
 import com.harshitksinghai.UserEntry.Services.*;
 import org.slf4j.Logger;
@@ -45,6 +45,9 @@ public class UserLoginServiceImpl implements UserLoginService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    RefreshTokenService refreshTokenService;
+
     @Value("${site.url}")
     private String siteURL;
 
@@ -65,14 +68,28 @@ public class UserLoginServiceImpl implements UserLoginService {
             userLoginResponseDTO.setMessage("email not found");
             userLoginResponseDTO.setSuccess(false);
         }
-        //User user = userOpt.get();
+        User user = userOpt.get();
+
         String jwtToken = null;
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLoginRequestDTO.getEmail(), userLoginRequestDTO.getPassword()));
+        LOG.info("verify password - passed authenticationManager code");
+
         if (authentication.isAuthenticated()) {
+            RefreshToken existingToken = user.getRefreshToken();
+            if(existingToken != null){
+                user.setRefreshToken(null);
+                refreshTokenService.delete(existingToken);
+                userService.saveUserDetails(user);
+            }
+
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userLoginRequestDTO.getEmail());
             jwtToken = jwtUtils.generateToken(userLoginRequestDTO.getEmail());
-            userLoginResponseDTO.setMessage("email and password verified successfully");
-            userLoginResponseDTO.setSuccess(true);
-            userLoginResponseDTO.setJwtToken(jwtToken);
+            if(jwtToken != null){
+                userLoginResponseDTO.setMessage("email and password verified successfully");
+                userLoginResponseDTO.setSuccess(true);
+                userLoginResponseDTO.setJwtToken(jwtToken);
+                userLoginResponseDTO.setRefreshToken(refreshToken.getToken());
+            }
         } else {
             throw new UsernameNotFoundException("invalid user request..!!");
         }
