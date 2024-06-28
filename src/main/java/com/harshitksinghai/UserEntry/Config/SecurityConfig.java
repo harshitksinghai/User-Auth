@@ -43,7 +43,9 @@ public class SecurityConfig {
         LOG.info("SecurityConfig -> Inside the SecurityFilterChain......");
         http.csrf(csrf ->csrf.disable()) // .csrf(csrf -> csrf.disable()): Disables CSRF protection. CSRF (Cross-Site Request Forgery) protection is disabled because JWT (JSON Web Token) authentication typically does not use cookies and is stateless.
                 .cors(cors -> cors.disable())
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/register/onboarding").authenticated() // Require authentication for this endpoint
+                        .requestMatchers("/api/auth/**").permitAll() // Allow all other /api/auth/** endpoints
                         .anyRequest().authenticated())
                 .logout(logout -> logout
                         .deleteCookies("JSESSIONID")) // Configures logout behavior to delete the JSESSIONID cookie upon logout. This is important for clearing session-related information.

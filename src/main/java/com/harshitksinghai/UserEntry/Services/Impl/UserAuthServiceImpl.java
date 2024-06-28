@@ -6,9 +6,9 @@ import com.harshitksinghai.UserEntry.DTO.ResponseDTO.RefreshTokenRequestDTO;
 import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
 import com.harshitksinghai.UserEntry.Models.RefreshToken;
 import com.harshitksinghai.UserEntry.Models.User;
-import com.harshitksinghai.UserEntry.Services.RefreshTokenService;
-import com.harshitksinghai.UserEntry.Services.UserAuthService;
-import com.harshitksinghai.UserEntry.Services.UserService;
+import com.harshitksinghai.UserEntry.Services.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +19,7 @@ import java.util.Optional;
 
 @Service
 public class UserAuthServiceImpl implements UserAuthService {
+    private final Logger LOG = LoggerFactory.getLogger(UserAuthServiceImpl.class);
 
     @Autowired
     UserService userService;
@@ -27,9 +28,16 @@ public class UserAuthServiceImpl implements UserAuthService {
     RefreshTokenService refreshTokenService;
 
     @Autowired
+    OTPService otpService;
+
+    @Autowired
+    LinkService linkService;
+
+    @Autowired
     JwtUtils jwtUtils;
     @Override
     public ResponseEntity<String> verifyEmail(VerifyEmailRequestDTO verifyEmailRequestDTO) {
+        LOG.info("inside verifyEmail in UserAuthServiceImpl");
         Optional<User> userOpt = userService.findByEmail(verifyEmailRequestDTO.getEmail());
         if (userOpt.isPresent()) {
             User user = userOpt.get();
@@ -52,23 +60,30 @@ public class UserAuthServiceImpl implements UserAuthService {
 
     @Override
     public ResponseEntity<String> emailFieldEditedAction() {
+        LOG.info("inside emailFieldEditedAction in UserAuthServiceImpl");
         return null;
     }
 
     public UserLoginResponseDTO refreshToken(RefreshTokenRequestDTO refreshTokenRequestDTO) {
+        LOG.info("inside refreshToken in UserAuthServiceImpl");
+
+        UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
+
         Optional<RefreshToken> refreshTokenOpt = refreshTokenService.findByToken(refreshTokenRequestDTO.getRefreshToken());
 
         if (refreshTokenOpt.isEmpty()) {
-            throw new RuntimeException("Refresh token is not in database!");
+            LOG.info("Refresh token is not in database!");
+            userLoginResponseDTO.setMessage("Refresh token is not in database!");
+            userLoginResponseDTO.setSuccess(false);
+            return userLoginResponseDTO;
         }
 
         RefreshToken refreshToken = refreshTokenService.verifyExpiration(refreshTokenOpt.get());
         String email = refreshToken.getEmail();
 
-        String accessToken = jwtUtils.generateToken(email);
+        String jwtToken = jwtUtils.generateToken(email);
 
-        UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
-        userLoginResponseDTO.setJwtToken(accessToken);
+        userLoginResponseDTO.setJwtToken(jwtToken);
         userLoginResponseDTO.setRefreshToken(refreshTokenRequestDTO.getRefreshToken());
         userLoginResponseDTO.setSuccess(true);
         userLoginResponseDTO.setMessage("Refresh token function executed successfully");
@@ -76,4 +91,18 @@ public class UserAuthServiceImpl implements UserAuthService {
         return userLoginResponseDTO;
     }
 
+    @Override
+    public ResponseEntity<String> clearExpiredOTPsLinks() {
+        LOG.info("inside clearExpiredOTPsLinks in UserAuthServiceImpl");
+
+        LOG.info("clearing expired otps");
+        otpService.clearExpiredOTPs();
+        LOG.info("expired otps cleared successfully");
+
+        LOG.info("clearing expired links");
+        linkService.clearExpiredLinks();
+        LOG.info("expired links cleared successfully");
+
+        return new ResponseEntity<>("successfully cleared expired otps and links", HttpStatus.OK);
+    }
 }

@@ -9,11 +9,11 @@ public interface UserLoginService{
 
     ResponseEntity<String> forgotPassword(ForgotPasswordRequestDTO forgotPasswordRequestDTO);
 
-    ResponseEntity<String> verifyLoginResetPasswordLink(String code);
+    ResponseEntity<UserLoginResponseDTO> verifyLoginResetPasswordLink(String code);
 
-    ResponseEntity<String> verifyTempLoginLink(String code);
+    ResponseEntity<UserLoginResponseDTO> verifyTempLoginLink(String code);
 
     ResponseEntity<String> sendLoginCode(UserTempLoginRequestDTO userTempLoginRequestDTO);
 
-    ResponseEntity<String> verifyTempLoginOTP(VerifyOTPRequestDTO verifyOTPRequestDTO);
+    ResponseEntity<UserLoginResponseDTO> verifyTempLoginOTP(VerifyOTPRequestDTO verifyOTPRequestDTO);
 }

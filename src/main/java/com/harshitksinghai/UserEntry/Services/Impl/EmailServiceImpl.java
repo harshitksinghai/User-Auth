@@ -1,6 +1,8 @@
 package com.harshitksinghai.UserEntry.Services.Impl;
 
 import com.harshitksinghai.UserEntry.Services.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EmailServiceImpl implements EmailService {
+    private final Logger LOG = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     @Autowired
     private JavaMailSender mailSender;
@@ -17,6 +20,7 @@ public class EmailServiceImpl implements EmailService {
     private String fromMail;
     @Override
     public void sendOTPLinkEmail(String email, String otp, String link) {
+        LOG.info("inside sendOTPLinkEmail in EmailServiceImpl");
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         simpleMailMessage.setFrom(fromMail);
         simpleMailMessage.setSubject("Your OTP and Magic Link");
@@ -28,6 +32,7 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendResetPasswordLink(String email, String link) {
+        LOG.info("inside sendResetPasswordLink in EmailServiceImpl");
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         simpleMailMessage.setFrom(fromMail);
         simpleMailMessage.setSubject("Your Reset Password Link");

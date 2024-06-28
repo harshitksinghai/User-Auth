@@ -24,8 +24,8 @@ public class UserLoginController {
         return userLoginService.forgotPassword(forgotPasswordRequestDTO);
     }
 
-    @PostMapping("/verify-login-reset-password-link")
-    public ResponseEntity<String> verifyLoginResetPasswordLink(@RequestParam("code") String code){
+    @GetMapping("/verify-login-reset-password-link")
+    public ResponseEntity<UserLoginResponseDTO> verifyLoginResetPasswordLink(@RequestParam("code") String code){
         return userLoginService.verifyLoginResetPasswordLink(code);
     } // when link is verified redirect to main/reset-password endpoint
 
@@ -34,13 +34,13 @@ public class UserLoginController {
         return userLoginService.sendLoginCode(userTempLoginRequestDTO);
     }
 
-    @PostMapping("/verify-temp-login-link")
-    public ResponseEntity<String> verifyTempLoginLink(@RequestParam("code") String code){
+    @GetMapping("/verify-temp-login-link")
+    public ResponseEntity<UserLoginResponseDTO> verifyTempLoginLink(@RequestParam("code") String code){
         return userLoginService.verifyTempLoginLink(code);
     }
 
     @PostMapping("/verify-temp-login-otp")
-    public ResponseEntity<String> verifyTempLoginOTP(@RequestBody VerifyOTPRequestDTO verifyOTPRequestDTO){
+    public ResponseEntity<UserLoginResponseDTO> verifyTempLoginOTP(@RequestBody VerifyOTPRequestDTO verifyOTPRequestDTO){
         return userLoginService.verifyTempLoginOTP(verifyOTPRequestDTO);
     }
 }

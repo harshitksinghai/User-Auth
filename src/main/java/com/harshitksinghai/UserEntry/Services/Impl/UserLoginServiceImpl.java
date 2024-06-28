@@ -3,7 +3,6 @@ package com.harshitksinghai.UserEntry.Services.Impl;
 import com.harshitksinghai.UserEntry.Config.JwtUtility.JwtUtils;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.*;
 import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
-import com.harshitksinghai.UserEntry.Models.RefreshToken;
 import com.harshitksinghai.UserEntry.Models.User;
 import com.harshitksinghai.UserEntry.Services.*;
 import org.slf4j.Logger;
@@ -48,11 +47,15 @@ public class UserLoginServiceImpl implements UserLoginService {
     @Autowired
     RefreshTokenService refreshTokenService;
 
+    @Autowired
+    TokenService tokenService;
+
     @Value("${site.url}")
     private String siteURL;
 
     @Override
     public ResponseEntity<UserLoginResponseDTO> verifyPassword(UserLoginRequestDTO userLoginRequestDTO) {
+        LOG.info("inside verifyPassword in UserLoginServiceImpl");
         UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
 
         if (userLoginRequestDTO == null) {
@@ -68,36 +71,25 @@ public class UserLoginServiceImpl implements UserLoginService {
             userLoginResponseDTO.setMessage("email not found");
             userLoginResponseDTO.setSuccess(false);
         }
-        User user = userOpt.get();
-
-        String jwtToken = null;
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userLoginRequestDTO.getEmail(), userLoginRequestDTO.getPassword()));
         LOG.info("verify password - passed authenticationManager code");
 
         if (authentication.isAuthenticated()) {
-            RefreshToken existingToken = user.getRefreshToken();
-            if(existingToken != null){
-                user.setRefreshToken(null);
-                refreshTokenService.delete(existingToken);
-                userService.saveUserDetails(user);
-            }
-
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userLoginRequestDTO.getEmail());
-            jwtToken = jwtUtils.generateToken(userLoginRequestDTO.getEmail());
-            if(jwtToken != null){
-                userLoginResponseDTO.setMessage("email and password verified successfully");
-                userLoginResponseDTO.setSuccess(true);
-                userLoginResponseDTO.setJwtToken(jwtToken);
-                userLoginResponseDTO.setRefreshToken(refreshToken.getToken());
-            }
+            userLoginResponseDTO = tokenService.generateJwtAndRefreshToken(userOpt.get());
         } else {
-            throw new UsernameNotFoundException("invalid user request..!!");
+            LOG.info("email and password did not match");
+            userLoginResponseDTO.setMessage("email and password did not match");
+            userLoginResponseDTO.setSuccess(false);
+            return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.BAD_REQUEST);
         }
+        userLoginResponseDTO.setMessage("email and password verified successfully");
         return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.ACCEPTED);
     }
 
     @Override
     public ResponseEntity<String> forgotPassword(ForgotPasswordRequestDTO forgotPasswordRequestDTO) {
+        LOG.info("inside forgotPassword in UserLoginServiceImpl");
+
         String email = forgotPasswordRequestDTO.getEmail();
 
         String code = linkService.generateLink();
@@ -109,16 +101,35 @@ public class UserLoginServiceImpl implements UserLoginService {
     } // try to set up subject, body here itself and pass as object to emailService
 
     @Override
-    public ResponseEntity<String> verifyLoginResetPasswordLink(String code) {
+    public ResponseEntity<UserLoginResponseDTO> verifyLoginResetPasswordLink(String code) {
+        LOG.info("inside verifyLoginResetPasswordLink in UserLoginServiceImpl");
+
+        UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
+
         ResponseEntity<String> responseEntity = linkService.verifyLink(code);
         if(HttpStatus.OK.equals(responseEntity.getStatusCode())){
-            return new ResponseEntity<>("reset password link verified successfully", HttpStatus.OK);
+            String email = responseEntity.getBody();
+
+            Optional<User> userOpt = userService.findByEmail(email);
+            if (userOpt.isPresent()) {
+                userLoginResponseDTO = tokenService.generateJwtAndRefreshToken(userOpt.get());
+            } else {
+                LOG.info("user email not in database");
+                throw new UsernameNotFoundException("invalid user request..!!");
+            }
+            userLoginResponseDTO.setMessage("reset password link verified successfully");
+            return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.OK);
         }
-        return new ResponseEntity<>("Invalid or Expired Link", HttpStatus.BAD_REQUEST);
+
+        userLoginResponseDTO.setMessage("Invalid or Expired Link");
+        userLoginResponseDTO.setSuccess(false);
+        return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.BAD_REQUEST);
     }
 
     @Override
     public ResponseEntity<String> sendLoginCode(UserTempLoginRequestDTO userTempLoginRequestDTO) {
+        LOG.info("inside SendLoginCode in UserLoginServiceImpl");
+
         String email = userTempLoginRequestDTO.getEmail();
 
         String otp = otpService.generateOTP();
@@ -134,26 +145,63 @@ public class UserLoginServiceImpl implements UserLoginService {
     } // try to set up subject, body here itself and pass as object to emailService, this is to have single sendOTPEmail function in emailService
 
     @Override
-    public ResponseEntity<String> verifyTempLoginLink(String code) {
+    public ResponseEntity<UserLoginResponseDTO> verifyTempLoginLink(String code) {
+        LOG.info("inside verifyTempLoginLink in UserLoginServiceImpl");
+
+        UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
+
         ResponseEntity<String> responseEntity = linkService.verifyLink(code);
         if(HttpStatus.OK.equals(responseEntity.getStatusCode())){
-            return new ResponseEntity<>("Login Temp Link verified successfully", HttpStatus.OK);
+            LOG.info("just entered HttpStatus.OK.equals(responseEntity.getStatusCode");
+            String email = responseEntity.getBody();
+
+            Optional<User> userOpt = userService.findByEmail(email);
+            if (userOpt.isPresent()) {
+                userLoginResponseDTO = tokenService.generateJwtAndRefreshToken(userOpt.get());
+            } else {
+                LOG.info("user email not in database");
+                userLoginResponseDTO.setMessage("user email not in database");
+                userLoginResponseDTO.setSuccess(false);
+                return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.BAD_REQUEST);
+            }
+
+            userLoginResponseDTO.setMessage("Login Temp Link verified successfully");
+            return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.OK);
         }
-        return new ResponseEntity<>("Invalid or Expired Link", HttpStatus.BAD_REQUEST);
+        userLoginResponseDTO.setMessage("Invalid or Expired Link");
+        userLoginResponseDTO.setSuccess(false);
+        return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.BAD_REQUEST);
     }
 
     @Override
-    public ResponseEntity<String> verifyTempLoginOTP(VerifyOTPRequestDTO verifyOTPRequestDTO) {
+    public ResponseEntity<UserLoginResponseDTO> verifyTempLoginOTP(VerifyOTPRequestDTO verifyOTPRequestDTO) {
+        LOG.info("inside verifyTempLoginOTP in UserLoginServiceImpl");
+
+        UserLoginResponseDTO userLoginResponseDTO = new UserLoginResponseDTO();
+
         boolean isVerified = otpService.verifyOTP(verifyOTPRequestDTO);
-        System.out.println("im here 7");
 
         if(isVerified){
-            System.out.println("im here 8");
+            LOG.info("otp verified successfully, (in UserLoginServiceImpl verifyTempLoginOTP)");
+            Optional<User> userOpt = userService.findByEmail(verifyOTPRequestDTO.getEmail());
 
-            return new ResponseEntity<>("temp login otp verified successfully", HttpStatus.OK);
+            if (userOpt.isPresent()) {
+                userLoginResponseDTO = tokenService.generateJwtAndRefreshToken(userOpt.get());
+            } else {
+
+                LOG.info("user email not in database");
+                userLoginResponseDTO.setMessage("user email not in database");
+                userLoginResponseDTO.setSuccess(false);
+                return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.BAD_REQUEST);
+            }
+
+            LOG.info("temp login otp verified successfully");
+            userLoginResponseDTO.setMessage("temp login otp verified successfully");
+            return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.OK);
         }
-        System.out.println("im here 9");
-
-        return new ResponseEntity<>("temp login otp invalid or expired", HttpStatus.BAD_REQUEST);
+        LOG.info("temp login otp invalid or expired");
+        userLoginResponseDTO.setMessage("temp login otp invalid or expired");
+        userLoginResponseDTO.setSuccess(false);
+        return new ResponseEntity<>(userLoginResponseDTO, HttpStatus.BAD_REQUEST);
     }
 }

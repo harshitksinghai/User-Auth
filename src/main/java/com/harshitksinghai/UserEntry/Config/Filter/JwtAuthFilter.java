@@ -60,7 +60,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // When a user successfully logs in, an Authentication object is created and stored in the SecurityContextHolder. This object contains the principal (user details), credentials (password), and authorities (roles and permissions).
 
-        LOG.info("Inside the doFilterInternal Method after token extracting at 62 lne.....................");
+        LOG.info("Inside the doFilterInternal Method after token extraction");
             if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
                 UserDetails userDetails = customUserDetailsServiceImpl.loadUserByUsername(userEmail);
                 if(jwtUtils.validateToken(token, userDetails)){

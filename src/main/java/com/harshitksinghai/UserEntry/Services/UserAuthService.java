@@ -11,4 +11,6 @@ public interface UserAuthService {
     ResponseEntity<String> emailFieldEditedAction();
 
     UserLoginResponseDTO refreshToken(RefreshTokenRequestDTO refreshTokenRequestDTO);
+
+    ResponseEntity<String> clearExpiredOTPsLinks();
 }

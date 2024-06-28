@@ -13,7 +13,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Table(name = "refresh-token")
+@Table(name = "refresh-token", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

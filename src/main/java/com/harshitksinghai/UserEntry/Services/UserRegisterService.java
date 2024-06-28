@@ -3,6 +3,7 @@ package com.harshitksinghai.UserEntry.Services;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.UserOnBoardRequestDTO;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.UserSignUpRequestDTO;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.VerifyOTPRequestDTO;
+import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
 import org.springframework.http.ResponseEntity;
 
 public interface UserRegisterService {
@@ -11,7 +12,7 @@ public interface UserRegisterService {
 
     ResponseEntity<String> onBoardUser(UserOnBoardRequestDTO userOnBoardRequestDTO);
 
-    ResponseEntity<String> verifyOTP(VerifyOTPRequestDTO verifyOTPRequestDTO);
+    ResponseEntity<UserLoginResponseDTO> verifyOTP(VerifyOTPRequestDTO verifyOTPRequestDTO);
 
-    ResponseEntity<String> verifyLink(String code);
+    ResponseEntity<UserLoginResponseDTO> verifyLink(String code);
 }

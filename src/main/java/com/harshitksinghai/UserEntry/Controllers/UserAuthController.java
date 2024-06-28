@@ -32,6 +32,11 @@ public class UserAuthController {
         return userAuthService.refreshToken(refreshTokenRequestDTO);
     }
 
+    @GetMapping("/clear-expired-otps-links")
+    public ResponseEntity<String> clearExpiredOTPLink(){
+        return userAuthService.clearExpiredOTPsLinks();
+    }
+
     @PostMapping("/email-edited")
     public ResponseEntity<String> emailFieldEditedAction(){
         return userAuthService.emailFieldEditedAction();

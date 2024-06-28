@@ -4,22 +4,27 @@ import com.harshitksinghai.UserEntry.DTO.RequestDTO.VerifyOTPRequestDTO;
 import com.harshitksinghai.UserEntry.Models.OTPVerification;
 import com.harshitksinghai.UserEntry.Repositories.OTPVerificationRepository;
 import com.harshitksinghai.UserEntry.Services.OTPService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
 
 @Service
 public class OTPServiceImpl implements OTPService {
+    private final Logger LOG = LoggerFactory.getLogger(OTPServiceImpl.class);
 
     @Autowired
     OTPVerificationRepository otpVerificationRepository;
     @Override
     public String generateOTP() {
+        LOG.info("inside generateOTP in OTPServiceImpl");
         // Define the length of the OTP
         final int OTP_LENGTH = 6; // 6 characters long OTP
 
@@ -33,45 +38,46 @@ public class OTPServiceImpl implements OTPService {
         for (int i = 0; i < OTP_LENGTH; i++) {
             otp.append(OTP_CHARACTERS.charAt(random.nextInt(OTP_CHARACTERS.length())));
         }
+        LOG.info("otp generated");
         return otp.toString();
     }
 
     @Override
-    @Transactional
     public void addOTPDetails(String email, String otp) {
+        LOG.info("inside addOTPDetails in OTPServiceImpl");
         OTPVerification otpVerification = new OTPVerification();
         otpVerification.setOtp(otp);
         otpVerification.setEmail(email);
         otpVerification.setExpirationTime(LocalDateTime.now().plusMinutes(1).plusSeconds(30));
-
+        LOG.info("otp details added to db");
         otpVerificationRepository.save(otpVerification);
     }
 
     @Override
-    @Transactional
     public boolean verifyOTP(VerifyOTPRequestDTO verifyOTPRequestDTO) {
+        LOG.info("inside verifyOTP in OTPServiceImpl");
         String otp = verifyOTPRequestDTO.getOtp();
         Optional<OTPVerification> otpVerification = otpVerificationRepository.findByOtp(otp);
-        System.out.println("im here 1");
-        if(!otpVerification.isPresent()){
-            System.out.println("im here 2");
-
+        if(otpVerification.isEmpty()){
+            LOG.info("otp does not exist in db");
             return false;
         }
         if(otpVerification.get().getExpirationTime().isAfter(LocalDateTime.now())){
-            System.out.println("im here 3");
-
+            LOG.info("otp verified successfully, otp still not expired");
             otpVerificationRepository.deleteByOtp(otp);
-            System.out.println("im here 4");
 
             return true;
         }
-        System.out.println("im here 5");
-
+        LOG.info("otp expired");
         otpVerificationRepository.deleteByOtp(otp);
-        System.out.println("im here 6");
 
         return false;
     }
 
+    @Override
+    public void clearExpiredOTPs() {
+        LOG.info("inside clearExpiredOTPs in OTPServiceImpl");
+        LocalDateTime now = LocalDateTime.now();
+        otpVerificationRepository.deleteByExpirationTimeBefore(now);
+    }
 }
