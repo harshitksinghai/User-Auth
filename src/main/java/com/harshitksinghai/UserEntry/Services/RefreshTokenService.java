@@ -1,7 +1,6 @@
 package com.harshitksinghai.UserEntry.Services;
 
 import com.harshitksinghai.UserEntry.Models.RefreshToken;
-import com.harshitksinghai.UserEntry.Models.User;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -14,5 +13,9 @@ public interface RefreshTokenService {
 
     RefreshToken verifyExpiration(RefreshToken token);
 
+    @Transactional
     void delete(RefreshToken existingToken);
+
+    @Transactional
+    void deleteByToken(String refreshToken);
 }

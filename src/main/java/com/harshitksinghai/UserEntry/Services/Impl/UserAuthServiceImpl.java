@@ -1,9 +1,11 @@
 package com.harshitksinghai.UserEntry.Services.Impl;
 
 import com.harshitksinghai.UserEntry.Config.JwtUtility.JwtUtils;
+import com.harshitksinghai.UserEntry.DTO.RequestDTO.UserLogoutRequestDTO;
 import com.harshitksinghai.UserEntry.DTO.RequestDTO.VerifyEmailRequestDTO;
 import com.harshitksinghai.UserEntry.DTO.ResponseDTO.RefreshTokenRequestDTO;
 import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLoginResponseDTO;
+import com.harshitksinghai.UserEntry.DTO.ResponseDTO.UserLogoutResponseDTO;
 import com.harshitksinghai.UserEntry.Models.RefreshToken;
 import com.harshitksinghai.UserEntry.Models.User;
 import com.harshitksinghai.UserEntry.Services.*;
@@ -104,5 +106,33 @@ public class UserAuthServiceImpl implements UserAuthService {
         LOG.info("expired links cleared successfully");
 
         return new ResponseEntity<>("successfully cleared expired otps and links", HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<UserLogoutResponseDTO> logoutUser(UserLogoutRequestDTO userLogoutRequestDTO) {
+        UserLogoutResponseDTO userLogoutResponseDTO = new UserLogoutResponseDTO();
+
+        String jwtToken = userLogoutRequestDTO.getJwtToken();
+        jwtUtils.invalidateToken(jwtToken);
+
+        if(userLogoutRequestDTO.getRefreshToken() == null){
+            userLogoutResponseDTO.setMessage("invalid request credentials, refresh token not provided");
+            userLogoutResponseDTO.setSuccess(false);
+            return new ResponseEntity<>(userLogoutResponseDTO, HttpStatus.BAD_REQUEST);
+        }
+
+        Optional<User> userOpt = userService.findByEmail(userLogoutRequestDTO.getEmail());
+        if(userOpt.isEmpty()){
+            userLogoutResponseDTO.setMessage("user with provided email does not exist");
+            userLogoutResponseDTO.setSuccess(false);
+            return new ResponseEntity<>(userLogoutResponseDTO, HttpStatus.BAD_REQUEST);
+        }
+        userOpt.get().setRefreshToken(null);
+        userService.saveUserDetails(userOpt.get());
+        refreshTokenService.deleteByToken(userLogoutRequestDTO.getRefreshToken());
+
+        userLogoutResponseDTO.setMessage("user logged out successfully");
+        userLogoutResponseDTO.setSuccess(true);
+        return new ResponseEntity<>(userLogoutResponseDTO, HttpStatus.OK);
     }
 }
